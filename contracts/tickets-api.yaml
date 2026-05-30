@@ -1,0 +1,233 @@
+openapi: 3.0.3
+info:
+  title: Panini Support Tickets API
+  description: Contrato de integración para la gestión de tickets de soporte interno (Panini - Copa Mundial FIFA 2026).
+  version: 1.0.0
+
+servers:
+  - url: https://api.paninisupport.local
+    description: Servidor de integración (no implementado en esta PoC)
+
+tags:
+  - name: Tickets
+    description: Gestión de tickets de soporte de proveedores y logística
+
+paths:
+  /api/tickets:
+    get:
+      tags: [Tickets]
+      summary: Lista todos los tickets de soporte
+      operationId: getTickets
+      responses:
+        "200":
+          description: Listado de tickets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TicketResponse"
+        "500":
+          $ref: "#/components/responses/ServerError"
+    post:
+      tags: [Tickets]
+      summary: Crea un nuevo ticket de soporte
+      operationId: createTicket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTicketRequest"
+      responses:
+        "201":
+          description: Ticket creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/tickets/{ticketId}:
+    get:
+      tags: [Tickets]
+      summary: Obtiene el detalle de un ticket
+      operationId: getTicketById
+      parameters:
+        - $ref: "#/components/parameters/TicketId"
+      responses:
+        "200":
+          description: Detalle del ticket
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/tickets/{ticketId}/status:
+    patch:
+      tags: [Tickets]
+      summary: Actualiza el estado de un ticket
+      operationId: updateTicketStatus
+      parameters:
+        - $ref: "#/components/parameters/TicketId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTicketStatusRequest"
+      responses:
+        "200":
+          description: Ticket actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/tickets/{ticketId}/priority:
+    patch:
+      tags: [Tickets]
+      summary: Actualiza la prioridad de un ticket
+      operationId: updateTicketPriority
+      parameters:
+        - $ref: "#/components/parameters/TicketId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTicketPriorityRequest"
+      responses:
+        "200":
+          description: Ticket actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+components:
+  parameters:
+    TicketId:
+      name: ticketId
+      in: path
+      required: true
+      schema:
+        type: integer
+        example: 1
+
+  schemas:
+    TicketPriority:
+      type: string
+      enum: [CRITICAL, HIGH, MEDIUM, LOW]
+
+    TicketStatus:
+      type: string
+      enum: [OPEN, IN_PROGRESS, RESOLVED, CLOSED]
+
+    TicketCategory:
+      type: string
+      enum: [SUPPLIER, INVENTORY, DISTRIBUTION, LOGISTICS, PACKAGING, OTHER]
+
+    TicketResponse:
+      type: object
+      required: [ticketId, title, description, priority, status, supplier, category, createdAt, createdBy]
+      properties:
+        ticketId:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: "Faltante de sobres en bodega central"
+        description:
+          type: string
+          example: "La bodega central reporta 4.500 sobres menos respecto al despacho confirmado."
+        priority:
+          $ref: "#/components/schemas/TicketPriority"
+        status:
+          $ref: "#/components/schemas/TicketStatus"
+        supplier:
+          type: string
+          example: "Bodega Central San José"
+        category:
+          $ref: "#/components/schemas/TicketCategory"
+        createdAt:
+          type: string
+          format: date
+          example: "2026-05-29"
+        createdBy:
+          type: integer
+          example: 1
+
+    CreateTicketRequest:
+      type: object
+      required: [title, description, priority, supplier, category, createdBy]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        priority:
+          $ref: "#/components/schemas/TicketPriority"
+        supplier:
+          type: string
+        category:
+          $ref: "#/components/schemas/TicketCategory"
+        createdBy:
+          type: integer
+
+    UpdateTicketStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: "#/components/schemas/TicketStatus"
+
+    UpdateTicketPriorityRequest:
+      type: object
+      required: [priority]
+      properties:
+        priority:
+          $ref: "#/components/schemas/TicketPriority"
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        statusCode:
+          type: integer
+
+  responses:
+    BadRequest:
+      description: Solicitud inválida
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ServerError:
+      description: Error interno del servidor
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
